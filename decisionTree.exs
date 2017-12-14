@@ -43,6 +43,9 @@ defmodule DecisionTree do
 
   def fishingData(), do: @fishingData
 
+  @fig2 {:node, "outlook", [{"sunny", {:node, "humidity", [{"high", {:leaf, "bad"}}, {"normal", {:leaf, "good"}}]}}, {"overcast", {:leaf, "good"}}, {"rainy", {:node, "wind", [{"windy", {:leaf, "bad"}}, {"calm", {:leaf, "good"}}]}}]}
+
+  def fig2(), do: @fig2
   def xlogx(d) do
     cond do
       d <= 1.0e-100 -> 0.0
@@ -85,13 +88,13 @@ defmodule DecisionTree do
   defp putValues(map, []), do: map
   defp putValues(map, [x | xs]), do: putValues(Map.put(map, x, Map.get(map, x) + 1), xs)
 
-
-
-
-
-
-
-
-
+  def nodes({:null}), do: 0
+  def nodes({:leaf, attval}), do: 1
+  def nodes({:node, attname, list}) do
+    1 + Enum.sum(for pair <- list,
+                 do: pair |> snd |> nodes)
+  end  
+  
+  defp snd(pair), do: elem(pair, 1)
 
 end
