@@ -1,0 +1,98 @@
+defmodule DecisionTree do
+  
+  # Added types to future @spec annotations
+
+  @type attName :: String.t
+  @type attValue :: String.t
+  @type attribute :: {attName, [attValue]}
+  @type header :: [attribute]
+  @type row :: [attValue]
+  @type dataSet :: {header, [row]}
+  @type partition :: [{attValue, dataSet}]
+
+  @result %{"result" => ["good", "bad"]}
+
+  def result(), do: @result
+
+  @header  %{"outlook" => ["sunny", "overcast", "rainy"], "temp" => ["hot", "mild", "cool"], "humidity" => ["high", "normal"], "wind" => ["windy", "calm"], "result" => ["good", "bad"]}
+  
+  def header(), do: @header
+
+  @table [["sunny",    "hot",  "high",   "calm",  "bad" ],
+               ["sunny",    "hot",  "high",   "windy", "bad" ],
+               ["overcast", "hot",  "high",   "calm",  "good"],
+               ["rainy",    "mild", "high",   "calm",  "good"],
+               ["rainy",    "cool", "normal", "calm",  "good"],
+               ["rainy",    "cool", "normal", "windy", "bad" ],
+               ["overcast", "cool", "normal", "windy", "good"],
+               ["sunny",    "mild", "high",   "calm",  "bad" ],
+               ["sunny",    "cool", "normal", "calm",  "good"],
+               ["rainy",    "mild", "normal", "calm",  "good"],
+               ["sunny",    "mild", "normal", "windy", "good"],
+               ["overcast", "mild", "high",   "windy", "good"],
+               ["overcast", "hot",  "normal", "calm",  "good"],
+               ["rainy",    "mild", "high",   "windy", "bad" ]]
+
+  def table(), do: @table
+
+  @fishingData {@header, @table}
+
+  def fishingData(), do: @fishingData
+
+  def xlogx(d) do
+    cond do
+      d <= 1.0e-100 -> 0.0
+      true -> d * :math.log2(d)  
+    end
+  end
+
+  def allSame([]), do: true
+  def allSame(list = [x | _xs]) do
+    list |> Enum.map(fn(y) -> x == y end) |> Enum.all?
+  end
+
+  def remove(item, map), do: Map.delete(map, item)
+
+  def lookUpAtt(att, h, r) do
+    for x <- r,
+        x in Map.get(h, att), do: x
+  end
+
+  def removeAtt(attN, h, r) do
+    y = lookUpAtt(attN, h, r)
+    for x <- r,
+        not x in y, do: x
+  end
+
+  def buildFrequencyTable(attName, {_h, table} = _data) do
+    # attribute has the name and the possible values
+    name = hd Map.keys(attName)
+    vals = attName[name]
+    valuesToBuildTable = for y <- table,
+      x <- vals,
+      x in y,
+      do: x
+     putValues(%{}, valuesToBuildTable)
+  end
+
+
+  defp putValues(map, []), do: map
+  defp putValues(%{}, []), do: %{} 
+  defp putValues(map, [x | xs]) do
+    if (Map.has_key?(map, x)) do
+      putValues(Map.put(map, x, Map.get(map, x) + 1), xs)
+    else
+      putValues(Map.put(map, x, 1), xs)
+    end
+  end
+
+
+
+
+
+
+
+
+
+
+end
