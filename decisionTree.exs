@@ -89,8 +89,8 @@ defmodule DecisionTree do
   defp putValues(map, [x | xs]), do: putValues(Map.put(map, x, Map.get(map, x) + 1), xs)
 
   def nodes({:null}), do: 0
-  def nodes({:leaf, attval}), do: 1
-  def nodes({:node, attname, list}) do
+  def nodes({:leaf, _attval}), do: 1
+  def nodes({:node, _attname, list}) do
     1 + Enum.sum(for pair <- list,
                  do: pair |> snd |> nodes)
   end  
