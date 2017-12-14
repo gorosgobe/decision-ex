@@ -14,6 +14,10 @@ defmodule DecisionTree do
 
   def result(), do: @result
 
+  @outlook %{"outlook" => ["sunny", "overcast", "rainy"]}
+
+  def outlook(), do: @outlook
+  
   @header  %{"outlook" => ["sunny", "overcast", "rainy"], "temp" => ["hot", "mild", "cool"], "humidity" => ["high", "normal"], "wind" => ["windy", "calm"], "result" => ["good", "bad"]}
   
   def header(), do: @header
@@ -72,19 +76,14 @@ defmodule DecisionTree do
       x <- vals,
       x in y,
       do: x
-     putValues(%{}, valuesToBuildTable)
+    %{} |> initialiseMap(vals) |> putValues(valuesToBuildTable)
   end
 
+  defp initialiseMap(map, []), do: map
+  defp initialiseMap(map, [x | xs]), do: initialiseMap(Map.put(map, x, 0), xs) 
 
   defp putValues(map, []), do: map
-  defp putValues(%{}, []), do: %{} 
-  defp putValues(map, [x | xs]) do
-    if (Map.has_key?(map, x)) do
-      putValues(Map.put(map, x, Map.get(map, x) + 1), xs)
-    else
-      putValues(Map.put(map, x, 1), xs)
-    end
-  end
+  defp putValues(map, [x | xs]), do: putValues(Map.put(map, x, Map.get(map, x) + 1), xs)
 
 
 
