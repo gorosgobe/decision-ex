@@ -95,6 +95,17 @@ defmodule DecisionTree do
                  do: pair |> snd |> nodes)
   end  
   
-  defp snd(pair), do: elem(pair, 1)
+  def snd(pair), do: elem(pair, 1)
+
+  def evalTree({:null}, _h, _r), do: ""
+  def evalTree({:leaf, attval}, _h, _r), do: attval
+  # assuming tree is well formed, will always match one branch
+  def evalTree({:node, atname, [{value, decTree} | ps]}, h, r) do
+    if value in r do
+      evalTree(decTree, h, r)
+    else
+      evalTree({:node, atname, ps}, h, r)
+    end
+  end
 
 end
