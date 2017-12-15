@@ -108,4 +108,8 @@ defmodule DecisionTree do
     end
   end
 
+  def naiveNextAtt({h, _t}, {attName, _}) do
+    listOfKeys = Map.keys(h)
+    listOfKeys |> Enum.filter(fn(item) -> item != attName end) |> hd 
+  end
 end
