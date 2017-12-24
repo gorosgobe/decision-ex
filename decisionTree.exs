@@ -10,15 +10,15 @@ defmodule DecisionTree do
   @type dataSet :: {header, [row]}
   @type partition :: [{attValue, dataSet}]
 
-  @result %{"result" => ["good", "bad"]}
+  @result {"result", ["good", "bad"]}
 
   def result(), do: @result
 
-  @outlook %{"outlook" => ["sunny", "overcast", "rainy"]}
+  @outlook {"outlook", ["sunny", "overcast", "rainy"]}
 
   def outlook(), do: @outlook
   
-  @header  %{"outlook" => ["sunny", "overcast", "rainy"], "temp" => ["hot", "mild", "cool"], "humidity" => ["high", "normal"], "wind" => ["windy", "calm"], "result" => ["good", "bad"]}
+  @header  [{"outlook", ["sunny", "overcast", "rainy"]}, {"temp", ["hot", "mild", "cool"]}, {"humidity", ["high", "normal"]}, {"wind", ["windy", "calm"]}, {"result", ["good", "bad"]}]
   
   def header(), do: @header
 
@@ -58,44 +58,44 @@ defmodule DecisionTree do
     list |> Enum.map(fn(y) -> x == y end) |> Enum.all?
   end
 
-  def remove(item, map), do: Map.delete(map, item)
-
-  def lookUpAtt(att, h, r) do
-    for x <- r,
-        x in Map.get(h, att), do: x
+  def lookUpAtt(attName, h, r) do
+   hd (for x <- r,
+      x in (snd (hd Enum.filter(h, fn(pair) -> attName == fst pair end))), do: x)
   end
 
   def removeAtt(attN, h, r) do
     y = lookUpAtt(attN, h, r)
     for x <- r,
-        not x in y, do: x
+        x != y, do: x
   end
 
-  def buildFrequencyTable(attName, {_h, table} = _data) do
+  def buildFrequencyTable({attName, vals}, {_h, table} = _data) do
     # attribute has the name and the possible values
-    name = hd Map.keys(attName)
-    vals = attName[name]
     valuesToBuildTable = for y <- table,
       x <- vals,
       x in y,
       do: x
-    %{} |> initialiseMap(vals) |> putValues(valuesToBuildTable)
+    putValues([], valuesToBuildTable)
   end
 
-  defp initialiseMap(map, []), do: map
-  defp initialiseMap(map, [x | xs]), do: initialiseMap(Map.put(map, x, 0), xs) 
-
-  defp putValues(map, []), do: map
-  defp putValues(map, [x | xs]), do: putValues(Map.put(map, x, Map.get(map, x) + 1), xs)
-
+  defp putValues(list, []), do: list
+  defp putValues(list, [x | xs] = valuesToBuildTable) do
+    if x not in (Enum.map(list, &fst(&1))) do
+      # add with its total count
+      putValues([{x, Enum.count(valuesToBuildTable, fn(item) -> item == x end)} | list], xs)
+    else
+    putValues(list, xs)
+    end
+  end
   def nodes({:null}), do: 0
   def nodes({:leaf, _attval}), do: 1
   def nodes({:node, _attname, list}) do
     1 + Enum.sum(for pair <- list,
                  do: pair |> snd |> nodes)
-  end  
+  end
   
   def snd(pair), do: elem(pair, 1)
+  def fst(pair), do: elem(pair, 0)
 
   def evalTree({:null}, _h, _r), do: ""
   def evalTree({:leaf, attval}, _h, _r), do: attval
@@ -109,38 +109,33 @@ defmodule DecisionTree do
   end
 
   def naiveNextAtt({h, _t}, att) do
-    attName = hd Map.keys(att)
-    listOfKeys = Map.keys(h)
-    finalKey = listOfKeys |> Enum.filter(fn(item) -> item != attName end) |> hd
-    %{finalKey => Map.get(h, finalKey)}
+    attName = getAttributeName att
+    h |> Enum.filter(fn(item) -> (fst item) != attName end) |> hd
   end
 
   def partitionData({h, t}, attToPartitionWith) do
     # returns partition :: [{attVal, dataset} | xs] 
-    attName = hd Map.keys(attToPartitionWith)
-    for attval <- Map.get(h, attName),
+    attName = getAttributeName attToPartitionWith
+    for attval <- (snd attToPartitionWith),
       do: {attval, {h, (for row <- t, attval in row, do: removeAtt(attName, h, row))}} 
   end
 
   # return decision tree
   def buildTree({h, []}, _, _), do: {:null}
   def buildTree({h, t} = dataset, classificationAtt, attSelector) do
-    classAttN = hd Map.keys(classificationAtt)
-    if allSame(for row <- t, do: lookUpAtt(classAttN, h, row)) do
-      {:leaf, lookUpAtt(classificationAtt, h, hd(hd(t)))}
+    if allSame(for row <- t, do: lookUpAtt((fst classificationAtt), h, row)) do
+      {:leaf, lookUpAtt((fst classificationAtt), h, hd t)}
     else
-    att = attSelector.(dataset, classificationAtt)
-    partitions = partitionData(dataset, att)
-    {:node, att, buildTreePartitions(partitions, classificationAtt, attSelector)}
+      att = attSelector.(dataset, classificationAtt)
+      partitions = partitionData(dataset, att)
+      {:node, (getAttributeName att), buildTreePartitions(partitions, classificationAtt, attSelector)}
     end
   end
 
+  defp getAttributeName(att), do: fst att
   defp buildTreePartitions([], _, _), do: []
   defp buildTreePartitions([{pattVal, pdataset} | ps], classAtt, attSelector) do
     [{pattVal, buildTree(pdataset, classAtt, attSelector)} | buildTreePartitions(ps, classAtt, attSelector)]
   end
-
-
-
 
 end
