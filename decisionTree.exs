@@ -58,6 +58,13 @@ defmodule DecisionTree do
     list |> Enum.map(fn(y) -> x == y end) |> Enum.all?
   end
 
+  def remove(_, []), do: []
+  def remove(x, ps) do
+    for p <- ps,
+      x != (fst p), 
+      do: p
+  end
+
   def lookUpAtt(attName, h, r) do
    hd (for x <- r,
       x in (snd (hd Enum.filter(h, fn(pair) -> attName == fst pair end))), do: x)
@@ -69,7 +76,7 @@ defmodule DecisionTree do
         x != y, do: x
   end
 
-  def buildFrequencyTable({attName, vals}, {_h, table} = _data) do
+  def buildFrequencyTable({_attName, vals}, {_h, table} = _data) do
     # attribute has the name and the possible values
     valuesToBuildTable = for y <- table,
       x <- vals,
@@ -116,12 +123,13 @@ defmodule DecisionTree do
   def partitionData({h, t}, attToPartitionWith) do
     # returns partition :: [{attVal, dataset} | xs] 
     attName = getAttributeName attToPartitionWith
+
     for attval <- (snd attToPartitionWith),
-      do: {attval, {h, (for row <- t, attval in row, do: removeAtt(attName, h, row))}} 
+      do: {attval, {remove(attName, h), (for row <- t, attval in row, do: removeAtt(attName, h, row))}} 
   end
 
   # return decision tree
-  def buildTree({h, []}, _, _), do: {:null}
+  def buildTree({_, []}, _, _), do: {:null}
   def buildTree({h, t} = dataset, classificationAtt, attSelector) do
     if allSame(for row <- t, do: lookUpAtt((fst classificationAtt), h, row)) do
       {:leaf, lookUpAtt((fst classificationAtt), h, hd t)}
