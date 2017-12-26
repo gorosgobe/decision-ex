@@ -66,8 +66,6 @@ defmodule DecisionTree do
   end
 
   defp lookUp(x, pairList) do
-    #    IO.inspect x
-    #IO.inspect pairList
     # returns the first one, assumes there is always one match
     pairList |> Enum.filter(fn(pair) -> x == fst pair end) |> hd
   end
@@ -169,7 +167,6 @@ defmodule DecisionTree do
   def probability({_h, r} = dataset, attribute, value) do
     numRows = length r
     table = buildFrequencyTable attribute, dataset
-    IO.inspect table
     numx = snd (lookUp value, table)
     numx / numRows
   end
@@ -181,6 +178,16 @@ defmodule DecisionTree do
       part = snd(lookUp val, (partitionData dataset, partitionAtt)),
       ent = entropy(part, classAtt), do: prob * ent
     edc - Enum.sum totalSum
+  end
+
+  def bestGainAtt({h, _t} = dataset, classAtt) do
+    listOfGains = for attribute <- h,
+      attribute != classAtt, do: {gain(dataset, attribute, classAtt), attribute}
+    listOfGains 
+    |> Enum.map(fn(pair) -> fst pair end)
+    |> Enum.max
+    |> lookUp(listOfGains)
+    |> snd
   end
 
 end
