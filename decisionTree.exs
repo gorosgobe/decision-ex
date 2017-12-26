@@ -65,9 +65,16 @@ defmodule DecisionTree do
       do: p
   end
 
+  defp lookUp(x, pairList) do
+    #    IO.inspect x
+    #IO.inspect pairList
+    # returns the first one, assumes there is always one match
+    pairList |> Enum.filter(fn(pair) -> x == fst pair end) |> hd
+  end
+
   def lookUpAtt(attName, h, r) do
    hd (for x <- r,
-      x in (snd (hd Enum.filter(h, fn(pair) -> attName == fst pair end))), do: x)
+      x in (snd (lookUp(attName, h))), do: x)
   end
 
   def removeAtt(attN, h, r) do
@@ -82,16 +89,20 @@ defmodule DecisionTree do
       x <- vals,
       x in y,
       do: x
-    putValues([], valuesToBuildTable)
+    initialiseToZero(vals -- valuesToBuildTable) |> putValues(valuesToBuildTable)
+  end
+
+  defp initialiseToZero(vals) do
+    for val <- vals, do: {val, 0}
   end
 
   defp putValues(list, []), do: list
   defp putValues(list, [x | xs] = valuesToBuildTable) do
     if x not in (Enum.map(list, &fst(&1))) do
-      # add with its total count
+     # add with its total count
       putValues([{x, Enum.count(valuesToBuildTable, fn(item) -> item == x end)} | list], xs)
     else
-    putValues(list, xs)
+      putValues(list, xs)
     end
   end
   def nodes({:null}), do: 0
@@ -144,6 +155,32 @@ defmodule DecisionTree do
   defp buildTreePartitions([], _, _), do: []
   defp buildTreePartitions([{pattVal, pdataset} | ps], classAtt, attSelector) do
     [{pattVal, buildTree(pdataset, classAtt, attSelector)} | buildTreePartitions(ps, classAtt, attSelector)]
+  end
+
+  def entropy({_, []}, _), do: 0.0
+  def entropy(dataset, attribute) do
+    listOfProbs = for val <- (snd attribute),
+                      prob = probability(dataset, attribute, val) do 
+                        -xlogx(prob)
+                      end
+    listOfProbs |> Enum.sum
+  end
+
+  def probability({_h, r} = dataset, attribute, value) do
+    numRows = length r
+    table = buildFrequencyTable attribute, dataset
+    IO.inspect table
+    numx = snd (lookUp value, table)
+    numx / numRows
+  end
+
+  def gain(dataset, partitionAtt, classAtt) do
+    edc = entropy(dataset, classAtt)
+    totalSum = for val <- (snd partitionAtt),
+      prob = probability(dataset, partitionAtt, val),
+      part = snd(lookUp val, (partitionData dataset, partitionAtt)),
+      ent = entropy(part, classAtt), do: prob * ent
+    edc - Enum.sum totalSum
   end
 
 end
